@@ -1,0 +1,57 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "cwd": "${workspaceFolder}",
+            "executable": "./Build/boot/bootloader.elf",
+            // "name": "Debug with JLink",
+            // "request": "launch",
+            // "type": "cortex-debug",
+            // "device": "",
+            //"runToEntryPoint": "BootLoaderEntryPoint",
+            //"showDevDebugOutput": "none",
+            //"servertype": "jlink"
+
+            //"cwd": "${workspaceRoot}",
+            //"executable": "./Build/ProjectDemo.elf",
+            "name": "Jlink Jtag",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "serverpath": "F:/SEGGER/JLink_V898/JLinkGDBServerCL.exe",
+            "serverArgs": [],
+            // "armToolchainPath": "E:/Embedded-Tools/compiler/gcc-arm-none-eabi-10.3-2021.10/bin",
+            "armToolchainPath": "F:/arm-none-eabi/bin",
+            "device": "STM32F103C8",
+            "interface": "swd",
+            "serialNumber": "69405580",
+            "runToEntryPoint": "BootLoaderEntryPoint",
+            //"runToMain": true,
+            "svdFile": "F:/Keil/Arm/Packs/Keil/STM32F1xx_DFP/2.4.0/SVD/STM32F103xx.svd",
+            //"showDevDebugOutput": "raw",
+            "sourceFileMap": {
+                "/mnt/d/WorkSpace/ThacSy/Embedded/STM32": "D:/WorkSpace/ThacSy/Embedded/STM32"
+                }
+        // },
+        // {
+        //     "name": "Cortex Debug",
+        //     "cwd": "${workspaceFolder}",
+        //     "executable": "./Build/Bootloader.bin",
+        //     "request": "launch",
+        //     "type": "cortex-debug",
+        //     "runToEntryPoint": "BootLoaderEntryPoint",
+        //     "servertype": "jlink"
+        }
+    ]
+}
+
+// Product = J-Link CE V9.40
+// Nickname = 
+// SN = 69405580
+// USB = SN 69405580
+// HostFW = 2021 May 7 16:26
+// EmuFW = 2021 May 7 16:26

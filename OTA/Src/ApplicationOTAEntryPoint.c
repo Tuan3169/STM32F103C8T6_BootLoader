@@ -61,7 +61,14 @@ void ApplicationOTAEntryPoint(void)
     RCC_APB2ENR |= RCC_IOPCEN;
     GPIOC_CRH &= 0xFF0FFFFF;
     GPIOC_CRH |= 0x00200000;
-    while (1)
+
+    GPIOC_ODR |= GPIOC13;
+    for (int i = 0; i < 1000000; i++)
+        ; // arbitrary delay
+
+    uint32_t count = 0;
+
+    while (count < 10)
     {
         GPIOC_ODR |= GPIOC13;
         for (int i = 0; i < 100000; i++)
@@ -69,5 +76,7 @@ void ApplicationOTAEntryPoint(void)
         GPIOC_ODR &= ~GPIOC13;
         for (int i = 0; i < 100000; i++)
             ; // arbitrary delay
+        count++;
     }
+
 }

@@ -350,17 +350,14 @@ SPI1_IRQHandler:
 SPI2_IRQHandler:
     b Default_Handler
 
-.thumb_func
-USART1_IRQHandler:
-    b Default_Handler
+.weak USART1_IRQHandler
+.thumb_set USART1_IRQHandler, Default_Handler
 
-.thumb_func
-USART2_IRQHandler:
-    b Default_Handler
+.weak USART2_IRQHandler
+.thumb_set USART2_IRQHandler, Default_Handler
 
-.thumb_func
-USART3_IRQHandler:
-    b Default_Handler
+.weak USART3_IRQHandler
+.thumb_set USART3_IRQHandler, Default_Handler
 
 .thumb_func
 EXTI15_10_IRQHandler:

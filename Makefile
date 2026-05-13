@@ -1,6 +1,6 @@
 
 BUILD_ROOT = Build
-ROOT_DIR=..
+ROOT_DIR := $(CURDIR)
 
 # Detect OS
 ifeq ($(OS),Windows_NT)
@@ -25,7 +25,8 @@ BOOT_BIN = $(BOOT_BUILD)/Bootloader.bin
 APP_BIN  = $(APP_BUILD)/Application.bin
 OTA_BIN  = $(OTA_BUILD)/ApplicationOTA.bin
 
-INCLUDE_DIRS=-I$(ROOT_DIR)
+INCLUDE_DIRS=-I$(ROOT_DIR)	\
+				-I$(ROOT_DIR)/Stm32Pkg/stm32f103/Inc
 
 MERGED = $(BUILD_ROOT)/firmware.bin
 # J-Link configuration
@@ -53,16 +54,17 @@ all: $(BUILD_ROOT) $(BOOT_BUILD) $(APP_BUILD) $(OTA_BUILD)
 
 # build bootloader
 boot:
-	$(MAKE) -C $(BOOT_DIR) BUILD_DIR=../$(BOOT_BUILD) INCLUDE_DIRS=$(INCLUDE_DIRS) BOOT_BIN=$(BOOT_BIN)
+	$(MAKE) -C $(BOOT_DIR) BUILD_DIR=../$(BOOT_BUILD) INCLUDE_DIRS="$(INCLUDE_DIRS)" BOOT_BIN=$(BOOT_BIN)
 	cp $(BOOT_BIN) $(BUILD_ROOT)/Bootloader.bin
 
 # build app
 app:
-	$(MAKE) -C $(APP_DIR) BUILD_DIR=../$(APP_BUILD) INCLUDE_DIRS=$(INCLUDE_DIRS) APP_BIN=$(APP_BIN)
+	$(MAKE) -C $(APP_DIR) BUILD_DIR=../$(APP_BUILD) INCLUDE_DIRS="$(INCLUDE_DIRS)" APP_BIN=$(APP_BIN)
+	python3 $(ROOT_DIR)/BuildHashTool.py --bin $(APP_BIN) --total-size 0x6000 --crc-offset 0x5FF8 --hash-offset 0x5FFC --hash-size 4
 	cp $(APP_BIN) $(BUILD_ROOT)/Application.bin
 
 ota:
-	$(MAKE) -C $(OTA_DIR) BUILD_DIR=../$(OTA_BUILD) INCLUDE_DIRS=$(INCLUDE_DIRS) OTA_BIN=$(OTA_BIN)
+	$(MAKE) -C $(OTA_DIR) BUILD_DIR=../$(OTA_BUILD) INCLUDE_DIRS="$(INCLUDE_DIRS)" OTA_BIN=$(OTA_BIN)
 	cp $(OTA_BIN) $(BUILD_ROOT)/ApplicationOTA.bin
 
 # tạo thư mục
@@ -97,14 +99,14 @@ flash-boot:
 
 flash-app:
 	@echo "Flashing application via J-Link..."
-	@echo loadfile $(APP_BIN) 0x08001000 > jlink_app.cmd
+	@echo loadfile $(APP_BIN) 0x08004000 > jlink_app.cmd
 	@echo exit >> jlink_app.cmd
 	$(JLINK_EXE) -device $(JLINK_DEVICE) -if $(JLINK_IF) -speed $(JLINK_SPEED) -CommanderScript jlink_app.cmd
 	@del jlink_app.cmd
 
 flash-ota:
 	@echo "Flashing OTA application via J-Link..."
-	@echo loadfile $(OTA_BIN) 0x08008800 > jlink_ota.cmd
+	@echo loadfile $(OTA_BIN) 0x0800A000 > jlink_ota.cmd
 	@echo exit >> jlink_ota.cmd
 	$(JLINK_EXE) -device $(JLINK_DEVICE) -if $(JLINK_IF) -speed $(JLINK_SPEED) -CommanderScript jlink_ota.cmd
 	@del jlink_ota.cmd
