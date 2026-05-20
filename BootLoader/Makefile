@@ -1,6 +1,20 @@
+# Detect OS
+ifeq ($(OS),Windows_NT)
+  PLATFORM = Windows
+else
+  PLATFORM = Linux
+endif
+
+ifeq ($(PLATFORM),Linux)
 CC=arm-none-eabi-gcc
 AS=arm-none-eabi-gcc
 OBJCOPY=arm-none-eabi-objcopy
+else
+ARM_GNU_TOOLCHAIN_PATH = "F:\arm-none-eabi\bin"
+CC=$(ARM_GNU_TOOLCHAIN_PATH)/arm-none-eabi-gcc.exe
+AS=$(ARM_GNU_TOOLCHAIN_PATH)/arm-none-eabi-gcc.exe
+OBJCOPY=$(ARM_GNU_TOOLCHAIN_PATH)/arm-none-eabi-objcopy.exe
+endif
 
 STM32PKG_DIR ?= ../Stm32Pkg/stm32f103
 ROOT_DIR ?= ..

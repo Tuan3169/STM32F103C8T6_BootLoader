@@ -23,9 +23,10 @@
 #define APP_OTA_START_ADDRESS               0x0800A000
 
 // Application image layout (App + UserData)
-#define APP_IMAGE_SIZE                      0x00007000
-#define APP_HASH_OFFSET                      (APP_IMAGE_SIZE - 4U)
-#define APP_CRC_OFFSET                       (APP_IMAGE_SIZE - 8U)
+#define APP_IMAGE_SIZE                       0x00006000
+#define APP_CODE_SIZE                        (APP_IMAGE_SIZE - 1024U)  // 36 bytes for hash and CRC
+#define APP_HASH_OFFSET                      (APP_CODE_SIZE + 1024 - 36)
+#define APP_CRC_OFFSET                       (APP_HASH_OFFSET + 32U)
 #define APP_HASH_ADDRESS                     (APP_START_ADDRESS + APP_HASH_OFFSET)
 #define APP_CRC_ADDRESS                      (APP_START_ADDRESS + APP_CRC_OFFSET)
 

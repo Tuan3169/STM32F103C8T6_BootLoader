@@ -11,7 +11,7 @@ def parse_int(value: str) -> int:
 
 def update_hash(bin_path: Path, total_size: int, hash_offset: int, hash_size: int, crc_offset: int) -> None:
     data = bytearray(bin_path.read_bytes())
-
+    data = data[:total_size]
     if total_size <= 0:
         raise ValueError("total_size must be positive")
     if hash_size <= 0:
@@ -28,11 +28,21 @@ def update_hash(bin_path: Path, total_size: int, hash_offset: int, hash_size: in
     if len(data) > total_size:
         raise ValueError("binary larger than expected total_size")
 
-    # Compute CRC32 and SHA256 with CRC/HASH fields zeroed to avoid self-inclusion.
-    embed_crc32(data, crc_offset, hash_offset, hash_size)
-    embed_sha256(data, hash_offset, hash_size, crc_offset)
+
+    # # Zero CRC field, tính CRC32 toàn bộ app (trừ vùng CRC)
+    # for i in range(4):
+    #     data[crc_offset + i] = 0
+   
+
+    # # Zero hash field, tính SHA256 toàn bộ app (trừ vùng hash)
+    # for i in range(hash_size):
+    #     data[hash_offset + i] = 0
+    
+    embed_sha256(data, hash_offset, hash_size)
+    embed_crc32(data, crc_offset)
 
     bin_path.write_bytes(data)
+    # print(data.hex())
 
 
 def main() -> int:

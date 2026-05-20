@@ -1,6 +1,23 @@
-#include "crc32.h"
+/*****************************************************************************************************************
+ * @Filename: Crc.c
+ * @Author: Đinh Văn Tuấn
+ * @Date 2026-05-14
+ * @Version: 1.0
+ * @Description: Crc Tool
+ * 
+ * Copyright (c) 2026 []. All rights reserved.
+ * Licensed under the MIT License.
+ ****************************************************************************************************************/
 
-static const uint32_t kCrc32Table[256] = {
+
+//################################################# INCLUDE HEARDER #############################################
+#include "Crc.h"
+
+//#################################################     DEFINE    ###############################################
+
+
+//#################################################     TYPEDEF   ###############################################
+uint32_t crc32_table[256] = {
     0x00000000U, 0x77073096U, 0xEE0E612CU, 0x990951BAU,
     0x076DC419U, 0x706AF48FU, 0xE963A535U, 0x9E6495A3U,
     0x0EDB8832U, 0x79DCB8A4U, 0xE0D5E91EU, 0x97D2D988U,
@@ -67,9 +84,29 @@ static const uint32_t kCrc32Table[256] = {
     0xB40BBE37U, 0xC30C8EA1U, 0x5A05DF1BU, 0x2D02EF8DU
 };
 
-uint32_t crc32_init(void)
+//#################################################     VARIABLE  ###############################################
+
+
+//#################################################     CODE      ###############################################
+
+void crc32_init()
 {
-    return 0xFFFFFFFFU;
+    uint32_t poly = 0xEDB88320;
+
+    for (uint32_t i = 0; i < 256; i++)
+    {
+        uint32_t crc = i;
+
+        for (int j = 0; j < 8; j++)
+        {
+            if (crc & 1)
+                crc = (crc >> 1) ^ poly;
+            else
+                crc >>= 1;
+        }
+
+        crc32_table[i] = crc;
+    }
 }
 
 uint32_t crc32_calc(uint32_t crc, const uint8_t *data, size_t len)
@@ -77,12 +114,7 @@ uint32_t crc32_calc(uint32_t crc, const uint8_t *data, size_t len)
     uint32_t value = crc;
     for (size_t i = 0U; i < len; ++i) {
         uint8_t idx = (uint8_t)((value ^ data[i]) & 0xFFU);
-        value = kCrc32Table[idx] ^ (value >> 8U);
+        value = crc32_table[idx] ^ (value >> 8U);
     }
-    return value;
-}
-
-uint32_t crc32_finalize(uint32_t crc)
-{
-    return crc ^ 0xFFFFFFFFU;
+    return value ^ 0xFFFFFFFFU;
 }

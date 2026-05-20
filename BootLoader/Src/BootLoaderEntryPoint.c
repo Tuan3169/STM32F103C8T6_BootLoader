@@ -48,6 +48,7 @@
 #define RCC_IOPAEN (1 << 2)
 #define RCC_IOPCEN (1 << 4)
 #define GPIOA0 (1UL << 0)
+#define GPIOA1 (1UL << 1)
 #define GPIOC13 (1UL << 13)
 
 
@@ -409,18 +410,10 @@ static void BootUartHandleCommand(const char *cmd)
 static void BootUartProcess(void)
 {
     uint16_t size_package = 0U;
-    if ((g_boot_state == BOOT_STATE_WAIT_CMD) && ((GPIOA_IDR & GPIOA0) != 0U)) {
-        JumpToApplication();
-        return;
-    }
-    // if(g_uart_write_addr == 0 && ((GPIOA_IDR & GPIOA0) == 0U)) {
-    //     g_uart_write_addr = APP_START_ADDRESS;
-    //     BootUartEraseRange(g_uart_write_addr, sizeof(application_bin));
-    //     BootUartWriteBlock(g_uart_write_addr, application_bin, sizeof(application_bin));
-    //     UART_SendString(UART_PORT1, k_uart_done);
+    // if ((g_boot_state == BOOT_STATE_WAIT_CMD) && ((GPIOA_IDR & GPIOA0) != 0U)) {
     //     JumpToApplication();
+    //     return;
     // }
-    
 
     static uint8_t pkg_buf[UART_BLOCK_SIZE];
 
@@ -497,8 +490,8 @@ static void BootUartProcess(void)
                     UART_SendString(UART_PORT1, k_uart_done);
                     DelayMs(10);
                     BootUartResetTransfer();
-                    JumpToApplication();
-                    // BootSystemReset();
+                    // JumpToApplication();
+                    BootSystemReset();
                 }
                     // UART_SendString(UART_PORT1, k_uart_ack);
                     // DelayMs(10);
@@ -521,51 +514,82 @@ static void BootUartProcess(void)
 
 //#################################################     CODE      ###############################################
 
+bool memcmp_array(const void *ptr1, const void *ptr2, size_t num) {
+    const uint8_t *b1 = (const uint8_t *)ptr1;
+    const uint8_t *b2 = (const uint8_t *)ptr2;
+    uint8_t debug_buf[32];
+    for (size_t i = 0; i < num; ++i) {
+        if (b1[i] != b2[i]) {
+            return false;
+        }
+    }
+    return true;
+}
 
-
-static bool VerifyAppImage(void)
+static bool VerifyImage(uint32_t address, uint32_t size)
 {
-    const uint32_t stored_hash = *(const volatile uint32_t *)(APP_HASH_ADDRESS);
-    const uint32_t stored_crc = *(const volatile uint32_t *)(APP_CRC_ADDRESS);
+    uint8_t stored_hash[32];
+    for(uint8_t i = 0; i < 32U; ++i) {
+        stored_hash[i] = *(const volatile uint8_t *)(address + size - 36 + i);
+    }
+
+    const uint8_t *firmware = (const volatile uint8_t *)(address);
+
+    const uint32_t stored_crc = *(const volatile uint32_t *)(address + size - 4);
     Sha256Ctx ctx;
     uint8_t digest[32];
     uint8_t chunk[128];
     uint32_t offset = 0U;
-    uint32_t crc = crc32_init();
+    uint32_t crc;
+    uint8_t debug_buf[32];
+
+    uint32_t firmware_size = *(const volatile uint32_t *)(address + size - 40);
+
+    // UART_SendString(UART_PORT1, "firmware_size:");
+    // Uint32ToStr(firmware_size, debug_buf, 16);
+    // UART_SendString(UART_PORT1, debug_buf);
+    // UART_SendString(UART_PORT1, "\n");
 
     sha256_init(&ctx);
+    sha256_update(&ctx, firmware, firmware_size);
+    crc = crc32_calc(0xFFFFFFFFU, firmware, firmware_size);
+    
 
-    while (offset < APP_IMAGE_SIZE) {
-        uint32_t chunk_len = APP_IMAGE_SIZE - offset;
-        if (chunk_len > sizeof(chunk)) {
-            chunk_len = sizeof(chunk);
-        }
-
-        const uint8_t *src = (const uint8_t *)(APP_START_ADDRESS + offset);
-        for (uint32_t i = 0U; i < chunk_len; ++i) {
-            uint32_t abs = offset + i;
-            if ((abs >= APP_HASH_OFFSET && abs < (APP_HASH_OFFSET + 4U)) ||
-                (abs >= APP_CRC_OFFSET && abs < (APP_CRC_OFFSET + 4U))) {
-                chunk[i] = 0U;
-            } else {
-                chunk[i] = src[i];
-            }
-        }
-
-        sha256_update(&ctx, chunk, chunk_len);
-        crc = crc32_update(crc, chunk, chunk_len);
-        offset += chunk_len;
-    }
+    uint8_t *crc_buf = &crc;
+    uint8_t *store_crc_buf = &stored_crc;
 
     sha256_final(&ctx, digest);
     crc = crc32_finalize(crc);
 
-    uint32_t computed = (uint32_t)digest[0] |
-                        ((uint32_t)digest[1] << 8U) |
-                        ((uint32_t)digest[2] << 16U) |
-                        ((uint32_t)digest[3] << 24U);
+    //     UART_SendString(UART_PORT1, "SHA:");
+    // for(uint8_t i = 0; i < 32; i++) {
+    //     Uint32ToStr((uint8_t)digest[i], debug_buf, 16);
+    //     UART_SendString(UART_PORT1, debug_buf);
+    // }
+    // UART_SendString(UART_PORT1, "\n");
+    // UART_SendString(UART_PORT1, "SHA store:");
+    // for(uint8_t i = 0; i < 32; i++) {
+    //     Uint32ToStr((uint8_t)stored_hash[i], debug_buf, 16);
+    //     UART_SendString(UART_PORT1, debug_buf);
+    // }
+    // UART_SendString(UART_PORT1, "\n");
 
-    return (computed == stored_hash) && (crc == stored_crc);
+    // UART_SendString(UART_PORT1, "CRC:");
+    // for(uint8_t i = 0; i < 4; i++) {
+    //     Uint32ToStr((uint8_t)crc_buf[i], debug_buf, 16);
+    //     UART_SendString(UART_PORT1, debug_buf);
+    // }
+    // UART_SendString(UART_PORT1, "\n");
+    // UART_SendString(UART_PORT1, "CRC store:");
+    // for(uint8_t i = 0; i < 4; i++) {
+    //     Uint32ToStr((uint8_t)store_crc_buf[i], debug_buf, 16);
+    //     UART_SendString(UART_PORT1, debug_buf);
+    // }
+    // UART_SendString(UART_PORT1, "\n");
+
+    // Uint32ToStr(crc, debug_buf, 16);
+    // UART_SendString(UART_PORT1, debug_buf);
+    return (memcmp_array(digest, stored_hash, 32) && (crc == stored_crc));
 }
 
 
@@ -640,16 +664,13 @@ void BootLoaderEntryPoint(void) {
     // Enable GPIOA clock and set PA0 input pull-up
     RCC_APB2ENR |= RCC_IOPAEN;
     GPIOA_CRL &= ~0x0000000FU;
-    GPIOA_CRL |= 0x00000008U;
+    GPIOA_CRL |= 0x44;
     GPIOA_ODR |= GPIOA0;
+    GPIOA_ODR |= GPIOA1;
 
 
-    // Verify app image hash before jumping
-    // if (VerifyAppImage()) {
-    //     JumpToApplication();
-    // } else {
-    //     JumpToOta();
-    // }
+
+    
     // RCC_APB2ENR |= RCC_IOPCEN;
     // GPIOC_CRH &= 0xFF0FFFFF;
     // GPIOC_CRH |= 0x00200000;
@@ -660,13 +681,36 @@ void BootLoaderEntryPoint(void) {
     GPIOC_CRH |= 0x00200000;
 
     GPIOC_ODR |= GPIOC13;
-    DelayMs(50);
 
-
+        // Verify app image hash before jumping
+    
     while (1)
     {
-        BootUartProcess();
-        DelayMs(10);
+        if((GPIOA_IDR & GPIOA0) == 0U) {
+            BootUartProcess();
+            DelayMs(10);
+        } else {
+            if ((GPIOA_IDR & GPIOA1)) {
+                if(VerifyImage(APP_START_ADDRESS, APP_IMAGE_SIZE)) {
+                    UART_SendString(UART_PORT1, "APP image valid, jumping to application...\n");
+                    JumpToApplication();
+                } else if (VerifyImage(APP_OTA_START_ADDRESS, APP_IMAGE_SIZE))
+                {
+                    UART_SendString(UART_PORT1, "APP image invalid, jumping to OTA...\n");
+                    JumpToOta();
+                }
+            } else {
+                if(VerifyImage(APP_OTA_START_ADDRESS, APP_IMAGE_SIZE)) {
+                    UART_SendString(UART_PORT1, "OTA image valid, jumping to APP...\n");
+                    JumpToOta();
+                } else if (VerifyImage(APP_START_ADDRESS, APP_IMAGE_SIZE))
+                {
+                    UART_SendString(UART_PORT1, "APP image invalid, jumping to OTA...\n");
+                    JumpToOta();
+                }
+            }
+            //JumpToApplication();
+        }
     }
 }
 

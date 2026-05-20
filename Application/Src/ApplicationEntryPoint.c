@@ -127,10 +127,10 @@ void ApplicationEntryPoint(void)
     while (1)
     {
         GPIOC_ODR |= GPIOC13;
-        for (int i = 0; i < 500000; i++)
+        for (int i = 0; i < 10000000; i++)
             ; // arbitrary delay
         GPIOC_ODR &= ~GPIOC13;
-        for (int i = 0; i < 500000; i++)
+        for (int i = 0; i < 10000000; i++)
             ; // arbitrary delay
         counter++;
 
